@@ -42,11 +42,11 @@ export const loginUser = async (req, res) => {
 };
 
 export const getUserProfile = async (req, res) => {
-    const userId = req.user.user_id;
+    const userId = req.user.id;
 
     try {
         const [rows] = await db.execute(
-            'SELECT user_id, username FROM users WHERE user_id = ?',
+            'SELECT user_id, user_name FROM users WHERE user_id = ?',
             [userId]
         );
 
