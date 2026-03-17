@@ -4,11 +4,11 @@ export const getAllPatients = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || "";
     let sortBy = req.query?.sortBy || "dateAdded";
-    let reverse = req.query?.reverse || "false"
+    let reverse = req.query?.reverse || "false";
 
-    // console.log(sortBy)
-
+    
     if (sortBy.toLowerCase() === "hospital_id") {
       sortBy = "hospitalId";
     } else if (sortBy.toLowerCase() === "name") {
@@ -18,23 +18,41 @@ export const getAllPatients = async (req, res) => {
     } else if (sortBy.toLowerCase() === "location") {
       sortBy = "location";
     } else {
-        sortBy = "dateAdded"
+      sortBy = "dateAdded";
     }
 
-    if(sortBy = "dateAdded"){
-        reverse = "true"
+    
+    if (sortBy === "dateAdded") {
+      reverse = "true";
     }
 
     const offset = (page - 1) * limit;
-    const [countResult] = await db.execute(
-      "SELECT COUNT(*) AS total FROM patients",
-    );
-    const totalPatients = countResult[0].total;
+
     
-    const [rows] = await db.execute(
-      // `SELECT * FROM patients LIMIT ${limit} OFFSET ${offset}`
-      `SELECT * FROM patients ORDER BY ${sortBy} ${reverse === "true" ? "DESC" : ""} LIMIT ${limit} OFFSET ${offset}`,
-    );
+    let countQuery = "SELECT COUNT(*) AS total FROM patients";
+    let queryParams = [];
+
+    if (search) {
+      countQuery += " WHERE patientName LIKE ?";
+      queryParams.push(`%${search}%`);
+    }
+
+    
+    const [countResult] = await db.execute(countQuery, queryParams);
+    const totalPatients = countResult[0].total;
+
+    
+    let dataQuery = "SELECT * FROM patients";
+
+    if (search) {
+      dataQuery += " WHERE patientName LIKE ?";
+    }
+
+    
+    dataQuery += ` ORDER BY ${sortBy} ${reverse === "true" ? "DESC" : ""} LIMIT ${limit} OFFSET ${offset}`;
+
+    
+    const [rows] = await db.execute(dataQuery, queryParams);
 
     res.status(200).json({
       currentPage: page,
